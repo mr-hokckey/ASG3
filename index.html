@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Virtual World</title>
+</head>
+
+<body onload="main()">
+    <canvas id="webgl" width="400" height="400">
+        Please use a browser that supports "canvas"
+    </canvas>
+
+    <p></p>
+
+    <button id="button_undo">Undo</button>
+    <button id="button_clearCanvas">Clear Canvas</button>
+
+    <p></p>
+    
+    Drawing Mode:
+    <div>
+        <button id="button_squares">Squares</button>
+        <button id="button_triangles">Triangles</button>
+        <button id="button_circles">Circles</button>
+    </div>
+
+    <p></p>
+
+    <div>
+        <input type="range" min="0" max="360" value="0" class="slider" id="slider_rotation"> Rotation
+    </div>
+    <div>
+        <input type="range" min="0" max="180" value="45" class="slider" id="slider_wingAngle"> Wing Angle / Wing Speed
+        <input type="checkbox" id="checkbox_animation" checked> Toggle Animation
+    </div>
+    <div>
+        <input type="range" min="-90" max="90" value="0" class="slider" id="slider_headAngle"> Head Angle
+    </div>
+    <div>
+        <input type="range" min="2" max="10" value="6" class="slider" id="slider_beakSize"> Beak Size
+    </div>
+    <p></p>
+
+    <script src="lib/webgl-utils.js"></script>
+    <script src="lib/webgl-debug.js"></script>
+    <script src="lib/cuon-utils.js"></script>
+    <script src="lib/cuon-matrix.js"></script>
+    <script src="Point.js"></script>
+    <script src="Triangle.js"></script>
+    <script src="Circle.js"></script>
+    <script src="Cube.js"></script>
+    <script src="World.js"></script>
+</body>
+
+</html>
