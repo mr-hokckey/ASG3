@@ -1,6 +1,6 @@
 // ColoredPoint.js (c) 2012 matsuda
 // Vertex shader program
-var VSHADER_SOURCE =`
+var VSHADER_SOURCE = `
     precision mediump float;
     attribute vec4 a_Position;
     attribute vec2 a_UV;
@@ -15,13 +15,15 @@ var VSHADER_SOURCE =`
     }`;
 
 // Fragment shader program
-var FSHADER_SOURCE =`
+var FSHADER_SOURCE = `
     precision mediump float;
     varying vec2 v_UV;
     uniform vec4 u_FragColor;
+    uniform sampler2D u_Sampler0;
     void main() {
         gl_FragColor = u_FragColor;
         gl_FragColor = vec4(v_UV,1.0,1.0);
+        gl_FragColor = texture2D(u_Sampler0, v_UV);
     }`;
 
 // Global variables
@@ -34,6 +36,7 @@ let u_ModelMatrix;
 let u_GlobalRotateMatrix;
 let u_ViewMatrix;
 let u_ProjectionMatrix;
+let u_Sampler0;
 
 // get the canvas and gl context
 function setupWebGL() {
@@ -100,13 +103,20 @@ function connectVariablesToGLSL() {
     //     console.log('Failed to get the storage location of u_ViewMatrix');
     //     return;
     // }
-    
+
     // // Get the storage location of u_ProjectionMatrix
     // u_ProjectionMatrix = gl.getUniformLocation(gl.program, 'u_ProjectionMatrix');
     // if (!u_ProjectionMatrix) {
     //     console.log('Failed to get the storage location of u_ProjectionMatrix');
     //     return;
     // }
+
+    // Get the storage location of u_Sampler0
+    u_Sampler0 = gl.getUniformLocation(gl.program, 'u_Sampler0');
+    if (!u_Sampler0) {
+        console.log('Failed to get the storage location of u_Sampler0');
+        return;
+    }
 }
 
 let g_animalGlobalRotation = new Matrix4();
@@ -129,7 +139,7 @@ function tick() {
 
 
 function addActionsForHtmlUI() {
-    document.getElementById("slider_rotation").addEventListener('mousemove', function () { 
+    document.getElementById("slider_rotation").addEventListener('mousemove', function () {
         g_animalGlobalRotation.setRotate(this.value, 0, 1, 0);
         gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, g_animalGlobalRotation.elements);
         renderAllShapes();
@@ -141,6 +151,51 @@ function addActionsForHtmlUI() {
     document.getElementById("checkbox_animation").addEventListener('change', function () { g_wingAnimation = !g_wingAnimation; renderAllShapes(); });
 }
 
+function initTextures(gl, n) {
+    var texture = gl.createTexture();   // Create a texture object
+    if (!texture) {
+        console.log('Failed to create the texture object');
+        return false;
+    }
+
+    var image = new Image();  // Create the image object
+    if (!image) {
+        console.log('Failed to create the image object');
+        return false;
+    }
+    // Register the event handler to be called on loading an image
+    image.onload = function () { sendTextureToGLSL(image); };
+    // Tell the browser to load an image
+    image.src = 'sky.jpg';
+
+    return true;
+}
+
+function sendTextureToGLSL(image) {
+    var texture = gl.createTexture();
+    if (!texture) {
+        console.log('Failed to create texture object');
+        return false;
+    }
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1); // Flip the image's y axis
+    // Enable texture unit0
+    gl.activeTexture(gl.TEXTURE0);
+    // Bind the texture object to the target
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+
+    // Set the texture parameters
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    // Set the texture image
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+
+    // Set the texture unit 0 to the sampler
+    gl.uniform1i(u_Sampler0, 0);
+
+    // gl.clear(gl.COLOR_BUFFER_BIT);   // Clear <canvas>
+
+    // gl.drawArrays(gl.TRIANGLE_STRIP, 0, n); // Draw the rectangle
+}
+
 function main() {
 
     setupWebGL();
@@ -149,12 +204,14 @@ function main() {
 
     addActionsForHtmlUI();
 
+    initTextures(gl, 0);
+
     // Specify the color for clearing <canvas>
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
 
     // Render all shapes
     // gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, g_animalGlobalRotation.elements);
+    // gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, g_animalGlobalRotation.elements);
 
     // renderAllShapes();
     requestAnimationFrame(tick);
@@ -166,14 +223,14 @@ function renderAllShapes() {
 
     // Draw cubes
     var body = new Cube();
-    body.color = [0,0.5,0.5,1];
+    body.color = [0, 0.5, 0.5, 1];
     body.matrix = new Matrix4();
     body.matrix.rotate(-45, 0, 0, 1);
     body.matrix.scale(0.4, 0.6, 0.4);
     body.render();
 
     var head = new Cube();
-    head.color = [0,0.2,0.8,1];
+    head.color = [0, 0.2, 0.8, 1];
     head.matrix = new Matrix4();
     head.matrix.rotate(60, 0, 0, 1);
     head.matrix.translate(0.4, -0.1, 0);
@@ -183,7 +240,7 @@ function renderAllShapes() {
     head.render();
 
     var beak = new Cube();
-    beak.color = [1,0.5,0,1];
+    beak.color = [1, 0.5, 0, 1];
     beak.matrix = headCoordinatesMat;
     beak.matrix.rotate(-45, 0, 0, 1);
     beak.matrix.translate(g_beakSize / 2, 0, 0);
@@ -194,14 +251,14 @@ function renderAllShapes() {
     // A hummingbird by itself doesn't really have enough parts to make a chain of
     // 3 parts. So I took some creative liberties.
     var flower = new Cube();
-    flower.color = [1,0,0,1];
+    flower.color = [1, 0, 0, 1];
     flower.matrix = beakCoordinatesMat;
-    flower.matrix.translate(0.7,0,0);
-    flower.matrix.scale(0.2,2,2);
+    flower.matrix.translate(0.7, 0, 0);
+    flower.matrix.scale(0.2, 2, 2);
     flower.render();
 
     var wingLeft = new Cube();
-    wingLeft.color = [0,0.5,0.25,1];
+    wingLeft.color = [0, 0.5, 0.25, 1];
     wingLeft.matrix = new Matrix4();
     wingLeft.matrix.rotate(45, 0, 0, 1);
     wingLeft.matrix.translate(0.1, 0.19, 0.19);
@@ -215,7 +272,7 @@ function renderAllShapes() {
     wingLeft.render();
 
     var wingRight = new Cube();
-    wingRight.color = [0,0.5,0.25,1];
+    wingRight.color = [0, 0.5, 0.25, 1];
     wingRight.matrix = new Matrix4();
     wingRight.matrix.rotate(45, 0, 0, 1);
     wingRight.matrix.translate(0.1, 0.19, -0.19);
@@ -229,7 +286,7 @@ function renderAllShapes() {
     wingRight.render();
 
     var footLeft = new Cube();
-    footLeft.color = [0.2,0.2,0.2,1];
+    footLeft.color = [0.2, 0.2, 0.2, 1];
     footLeft.matrix = new Matrix4();
     footLeft.matrix.translate(0, -0.3, 0.1);
     footLeft.matrix.rotate(-45, 0, 0, 1);
@@ -237,7 +294,7 @@ function renderAllShapes() {
     footLeft.render();
 
     var footRight = new Cube();
-    footRight.color = [0.2,0.2,0.2,1];
+    footRight.color = [0.2, 0.2, 0.2, 1];
     footRight.matrix = new Matrix4();
     footRight.matrix.translate(0, -0.3, -0.1);
     footRight.matrix.rotate(-45, 0, 0, 1);
@@ -245,7 +302,7 @@ function renderAllShapes() {
     footRight.render();
 
     var tail = new Cube();
-    tail.color = [0.9,0.9,0.9,1];
+    tail.color = [0.9, 0.9, 0.9, 1];
     tail.matrix = new Matrix4();
     tail.matrix.rotate(-45, 0, 0, 1);
     tail.matrix.translate(0, -0.5, 0);
