@@ -246,10 +246,13 @@ function renderAllShapes() {
     // performance
     var startTime = performance.now();
 
+    // Projection matrix
     var projMat = new Matrix4();
+    projMat.setPerspective(90, canvas.width/canvas.height, 1, 100); // fov, aspect ratio, near clipping plane, far clipping plane
     gl.uniformMatrix4fv(u_ProjectionMatrix, false, projMat.elements);
 
     var viewMat = new Matrix4();
+    viewMat.setLookAt(0,0,3, 0,0,-100, 0,1,0); // eye, at, up
     gl.uniformMatrix4fv(u_ViewMatrix, false, viewMat.elements);
 
     var globalRotMat = new Matrix4().rotate(g_globalAngle, 0, 1, 0);
