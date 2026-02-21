@@ -8,7 +8,7 @@ class Camera {
         this.projectionMatrix = new Matrix4();
 
         this.moveSpeed = 1.0;
-        this.panSpeed = 10.0;
+        this.panSpeed = 5.0;
         
         this.viewMatrix.setLookAt(
             this.eye.elements[0], this.eye.elements[1], this.eye.elements[2], 

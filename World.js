@@ -155,6 +155,10 @@ let g_globalAngle = 0;
 
 let g_camera;
 
+let g_startFlying = 0;
+
+let g_hummingbirds = [];
+
 function tick() {
     g_seconds = performance.now() / 1000.0 - g_startTime;
 
@@ -178,6 +182,7 @@ function addActionsForHtmlUI() {
     document.getElementById("checkbox_animation").addEventListener('change', function () { g_wingAnimation = !g_wingAnimation; renderAllShapes(); });
 }
 
+// dirt texture: https://www.deviantart.com/fabooguy/art/Dirt-Ground-Texture-Tileable-2048x2048-441212191
 function initTextures(gl, n) {
     var texture = gl.createTexture();   // Create a texture object
     if (!texture) {
@@ -193,7 +198,7 @@ function initTextures(gl, n) {
     // Register the event handler to be called on loading an image
     image.onload = function () { sendTextureToGLSL(image); };
     // Tell the browser to load an image
-    image.src = 'sky.jpg';
+    image.src = 'dirt.png';
 
     return true;
 }
@@ -268,12 +273,13 @@ function keydown(ev) {
         g_camera.panRight();
     }
 
-    // console.log(ev.keyCode);
+    // SPACE to place hummingbird
+    else if (ev.keyCode == 32) {
+        g_hummingbirds.push([g_camera.eye.elements[0], g_camera.eye.elements[1], g_camera.eye.elements[2]]);
+        g_startFlying = g_seconds;
+    }
+    //console.log(ev.keyCode);
 }
-
-// var g_eye = [0,0,3];
-// var g_at = [0,0,-100];
-// var g_up = [0,1,0];
 
 function renderAllShapes() {
     // performance
@@ -301,6 +307,14 @@ function renderAllShapes() {
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     // Draw cubes
+    var ground = new Cube();
+    ground.color = [0.82, 0.41, 0.12, 1.0];
+    ground.matrix = new Matrix4();
+    ground.textureNum = 0;
+    ground.matrix.scale(32, 1, 32);
+    ground.matrix.translate(-0.5, -1.5, -0.5);
+    ground.render();
+
     var sky = new Cube();
     sky.color = [0.53, 0.81, 0.98, 1];
     sky.matrix = new Matrix4();
@@ -308,9 +322,46 @@ function renderAllShapes() {
     sky.matrix.translate(-0.5, -0.5, -0.5);
     sky.render();
 
+    drawTree(8, 8);
+    drawTree(-8, 8);
+    drawTree(-8, -8);
+    drawTree(8, -8);
+
+    for (let i = 0; i < g_hummingbirds.length; i++) {
+        if (g_hummingbirds.length > 4) {
+            drawHummingbird(g_hummingbirds[i][0], g_hummingbirds[i][1] + g_seconds - g_startFlying, g_hummingbirds[i][2]);
+        } else {
+            drawHummingbird(g_hummingbirds[i][0], g_hummingbirds[i][1], g_hummingbirds[i][2]);
+        }
+    }
+
+    // performance
+    var duration = performance.now() - startTime;
+    sendTextToHTML("ms: " + Math.floor(duration) + " fps: " + Math.floor(10000/duration), "text_performance");
+}
+
+function drawTree(x, z) {
+    var trunk = new Cube();
+    trunk.color = [0.82, 0.41, 0.12, 1.0];
+    trunk.matrix = new Matrix4();
+    trunk.matrix.translate(x, -1, z);
+    trunk.matrix.scale(2, 2, 2);
+    trunk.matrix.translate(-0.5, 0, -0.5);
+    trunk.render();
+
+    var leaves = new Cube();
+    leaves.matrix = new Matrix4();
+    leaves.matrix.translate(x, 1, z);
+    leaves.matrix.scale(3, 3, 3);
+    leaves.matrix.translate(-0.5, 0, -0.5);
+    leaves.render();
+}
+
+function drawHummingbird(x, y, z) {
     var body = new Cube();
     body.color = [0, 0.5, 0.5, 1];
     body.matrix = new Matrix4();
+    body.matrix.translate(x, y, z);
     body.matrix.rotate(-45, 0, 0, 1);
     body.matrix.scale(0.4, 0.6, 0.4);
     body.matrix.translate(-0.5, -0.5, -0.5);
@@ -319,6 +370,7 @@ function renderAllShapes() {
     var head = new Cube();
     head.color = [0, 0.2, 0.8, 1];
     head.matrix = new Matrix4();
+    head.matrix.translate(x, y, z);
     head.matrix.rotate(60, 0, 0, 1);
     head.matrix.translate(0.4, -0.1, 0);
     head.matrix.rotate(g_headAngle, 1, 0, 0);
@@ -350,6 +402,7 @@ function renderAllShapes() {
     var wingLeft = new Cube();
     wingLeft.color = [0, 0.5, 0.25, 1];
     wingLeft.matrix = new Matrix4();
+    wingLeft.matrix.translate(x, y, z);
     wingLeft.matrix.rotate(45, 0, 0, 1);
     wingLeft.matrix.translate(0.1, 0.19, 0.19);
     if (g_wingAnimation) {
@@ -365,6 +418,7 @@ function renderAllShapes() {
     var wingRight = new Cube();
     wingRight.color = [0, 0.5, 0.25, 1];
     wingRight.matrix = new Matrix4();
+    wingRight.matrix.translate(x, y, z);
     wingRight.matrix.rotate(45, 0, 0, 1);
     wingRight.matrix.translate(0.1, 0.19, -0.19);
     if (g_wingAnimation) {
@@ -380,6 +434,7 @@ function renderAllShapes() {
     var footLeft = new Cube();
     footLeft.color = [0.2, 0.2, 0.2, 1];
     footLeft.matrix = new Matrix4();
+    footLeft.matrix.translate(x, y, z);
     footLeft.matrix.translate(0, -0.3, 0.1);
     footLeft.matrix.rotate(-45, 0, 0, 1);
     footLeft.matrix.scale(0.1, 0.1, 0.1);
@@ -389,6 +444,7 @@ function renderAllShapes() {
     var footRight = new Cube();
     footRight.color = [0.2, 0.2, 0.2, 1];
     footRight.matrix = new Matrix4();
+    footRight.matrix.translate(x, y, z);
     footRight.matrix.translate(0, -0.3, -0.1);
     footRight.matrix.rotate(-45, 0, 0, 1);
     footRight.matrix.scale(0.1, 0.1, 0.1);
@@ -398,15 +454,12 @@ function renderAllShapes() {
     var tail = new Cube();
     tail.color = [0.9, 0.9, 0.9, 1];
     tail.matrix = new Matrix4();
+    tail.matrix.translate(x, y, z);
     tail.matrix.rotate(-45, 0, 0, 1);
     tail.matrix.translate(0, -0.5, 0);
     tail.matrix.scale(0.2, 0.4, 0.4);
     tail.matrix.translate(-0.5, -0.5, -0.5);
     tail.render();
-
-    // performance
-    var duration = performance.now() - startTime;
-    sendTextToHTML("ms: " + Math.floor(duration) + " fps: " + Math.floor(10000/duration), "text_performance");
 }
 
 function sendTextToHTML(text, htmlID) {
