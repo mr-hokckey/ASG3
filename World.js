@@ -20,6 +20,7 @@ var FSHADER_SOURCE = `
     varying vec2 v_UV;
     uniform vec4 u_FragColor;
     uniform sampler2D u_Sampler0;
+    uniform sampler2D u_Sampler1;
     uniform int u_WhichTexture;
     void main() {
         if (u_WhichTexture == -2) {                         // Use Color
@@ -30,6 +31,9 @@ var FSHADER_SOURCE = `
 
         } else if (u_WhichTexture == 0) {                   // Use texture0
             gl_FragColor = texture2D(u_Sampler0, v_UV);
+
+        } else if (u_WhichTexture == 1) {                   // Use texture0
+            gl_FragColor = texture2D(u_Sampler1, v_UV);
 
         } else {                                            // Error - use red
             gl_FragColor = vec4(1, 0.2, 0.2, 1);
@@ -51,6 +55,7 @@ let u_GlobalRotateMatrix;
 let u_ViewMatrix;
 let u_ProjectionMatrix;
 let u_Sampler0;
+let u_Sampler1;
 let u_WhichTexture;
 
 // get the canvas and gl context
@@ -133,6 +138,13 @@ function connectVariablesToGLSL() {
         return;
     }
 
+    // Get the storage location of u_Sampler0
+    u_Sampler1 = gl.getUniformLocation(gl.program, 'u_Sampler1');
+    if (!u_Sampler1) {
+        console.log('Failed to get the storage location of u_Sampler1');
+        return;
+    }
+
     // Get the storage location of u_WhichColor
     u_WhichTexture = gl.getUniformLocation(gl.program, 'u_WhichTexture');
     if (!u_WhichTexture) {
@@ -158,6 +170,26 @@ let g_camera;
 let g_startFlying = 0;
 
 let g_hummingbirds = [];
+let g_walls = [];
+
+let g_map = [
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+];
 
 function tick() {
     g_seconds = performance.now() / 1000.0 - g_startTime;
@@ -190,28 +222,41 @@ function initTextures(gl, n) {
         return false;
     }
 
-    var image = new Image();  // Create the image object
-    if (!image) {
-        console.log('Failed to create the image object');
+    var image0 = new Image();  // Create the image0 object
+    if (!image0) {
+        console.log('Failed to create the image0 object');
         return false;
     }
-    // Register the event handler to be called on loading an image
-    image.onload = function () { sendTextureToGLSL(image); };
-    // Tell the browser to load an image
-    image.src = 'dirt.png';
+
+    var image1 = new Image();  // Create the image0 object
+    if (!image1) {
+        console.log('Failed to create the image1 object');
+        return false;
+    }
+    // Register the event handler to be called on loading an image0
+    image0.onload = function () { sendTextureToGLSL(image0, u_Sampler0, 0); };
+    image1.onload = function () { sendTextureToGLSL(image1, u_Sampler1, 1); };
+    // Tell the browser to load an image0
+    image0.src = 'dirt.png';
+    image1.src = 'leaves.jpg';
 
     return true;
 }
 
-function sendTextureToGLSL(image) {
+function sendTextureToGLSL(image, u_Sampler, texUnit) {
     var texture = gl.createTexture();
     if (!texture) {
         console.log('Failed to create texture object');
         return false;
     }
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1); // Flip the image's y axis
-    // Enable texture unit0
-    gl.activeTexture(gl.TEXTURE0);
+    // Make the texture unit active
+    if (texUnit == 0) {
+        gl.activeTexture(gl.TEXTURE0);
+    } else {
+        gl.activeTexture(gl.TEXTURE1);
+    }
+    // gl.activeTexture(gl.TEXTURE0);
     // Bind the texture object to the target
     gl.bindTexture(gl.TEXTURE_2D, texture);
 
@@ -221,7 +266,7 @@ function sendTextureToGLSL(image) {
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
 
     // Set the texture unit 0 to the sampler
-    gl.uniform1i(u_Sampler0, 0);
+    gl.uniform1i(u_Sampler, texUnit);
 
     // gl.clear(gl.COLOR_BUFFER_BIT);   // Clear <canvas>
 
@@ -276,7 +321,9 @@ function keydown(ev) {
     // SPACE to place hummingbird
     else if (ev.keyCode == 32) {
         g_hummingbirds.push([g_camera.eye.elements[0], g_camera.eye.elements[1], g_camera.eye.elements[2]]);
-        g_startFlying = g_seconds;
+        if (g_hummingbirds.length == 5) {
+            g_startFlying = g_seconds;
+        }
     }
     //console.log(ev.keyCode);
 }
@@ -327,6 +374,21 @@ function renderAllShapes() {
     drawTree(-8, -8);
     drawTree(8, -8);
 
+    // draw walls
+    for (let x = 0; x < 16; x++) {
+        for (let z = 0; z < 16; z++) {
+            if (g_map[x][z] == 0) {
+                let w = new Cube();
+                w.matrix = new Matrix4(); 
+                w.textureNum = 1;
+                w.matrix.translate(x, -1.25, z);
+                w.render();
+                g_walls.push(w); 
+            }
+        }
+    }
+
+
     for (let i = 0; i < g_hummingbirds.length; i++) {
         if (g_hummingbirds.length > 4) {
             drawHummingbird(g_hummingbirds[i][0], g_hummingbirds[i][1] + g_seconds - g_startFlying, g_hummingbirds[i][2]);
@@ -351,6 +413,7 @@ function drawTree(x, z) {
 
     var leaves = new Cube();
     leaves.matrix = new Matrix4();
+    leaves.textureNum = 1;
     leaves.matrix.translate(x, 1, z);
     leaves.matrix.scale(3, 3, 3);
     leaves.matrix.translate(-0.5, 0, -0.5);
