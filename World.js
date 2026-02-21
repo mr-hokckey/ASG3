@@ -153,6 +153,8 @@ var g_wingAnimation = true;
 
 let g_globalAngle = 0;
 
+let g_camera;
+
 function tick() {
     g_seconds = performance.now() / 1000.0 - g_startTime;
 
@@ -231,6 +233,11 @@ function main() {
 
     initTextures(gl, 0);
 
+    // camera
+    g_camera = new Camera();
+
+    document.onkeydown = keydown;
+
     // Specify the color for clearing <canvas>
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
 
@@ -242,18 +249,49 @@ function main() {
     requestAnimationFrame(tick);
 }
 
+function keydown(ev) {
+    // for WASD
+    if (ev.keyCode == 87) {         // W pressed
+        g_camera.moveForward();
+    } else if (ev.keyCode == 83) {  // S pressed
+        g_camera.moveBackward();
+    } else if (ev.keyCode == 65) {  // A pressed
+        g_camera.moveLeft();
+    } else if (ev.keyCode == 68) {  // D pressed
+        g_camera.moveRight();
+    }
+
+    // for QE
+    else if (ev.keyCode == 81) {  // A pressed
+        g_camera.panLeft();
+    } else if (ev.keyCode == 69) {  // D pressed
+        g_camera.panRight();
+    }
+
+    // console.log(ev.keyCode);
+}
+
+// var g_eye = [0,0,3];
+// var g_at = [0,0,-100];
+// var g_up = [0,1,0];
+
 function renderAllShapes() {
     // performance
     var startTime = performance.now();
 
     // Projection matrix
-    var projMat = new Matrix4();
-    projMat.setPerspective(90, canvas.width/canvas.height, 1, 100); // fov, aspect ratio, near clipping plane, far clipping plane
-    gl.uniformMatrix4fv(u_ProjectionMatrix, false, projMat.elements);
+    // var projMat = new Matrix4();
+    // projMat.setPerspective(90, canvas.width/canvas.height, 1, 100); // fov, aspect ratio, near clipping plane, far clipping plane
+    // gl.uniformMatrix4fv(u_ProjectionMatrix, false, projMat.elements);
 
-    var viewMat = new Matrix4();
-    viewMat.setLookAt(0,0,3, 0,0,-100, 0,1,0); // eye, at, up
-    gl.uniformMatrix4fv(u_ViewMatrix, false, viewMat.elements);
+    // var viewMat = new Matrix4();
+    // viewMat.setLookAt(g_eye[0],g_eye[1],g_eye[2], g_at[0],g_at[1],g_at[2], g_up[0],g_up[1],g_up[2],); // eye, at, up
+    // gl.uniformMatrix4fv(u_ViewMatrix, false, viewMat.elements);
+
+    g_camera.update();
+    
+    gl.uniformMatrix4fv(u_ProjectionMatrix, false, g_camera.projectionMatrix.elements);
+    gl.uniformMatrix4fv(u_ViewMatrix, false, g_camera.viewMatrix.elements);
 
     var globalRotMat = new Matrix4().rotate(g_globalAngle, 0, 1, 0);
     gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, globalRotMat.elements);
@@ -263,11 +301,19 @@ function renderAllShapes() {
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     // Draw cubes
+    var sky = new Cube();
+    sky.color = [0.53, 0.81, 0.98, 1];
+    sky.matrix = new Matrix4();
+    sky.matrix.scale(100,100,100);
+    sky.matrix.translate(-0.5, -0.5, -0.5);
+    sky.render();
+
     var body = new Cube();
     body.color = [0, 0.5, 0.5, 1];
     body.matrix = new Matrix4();
     body.matrix.rotate(-45, 0, 0, 1);
     body.matrix.scale(0.4, 0.6, 0.4);
+    body.matrix.translate(-0.5, -0.5, -0.5);
     body.render();
 
     var head = new Cube();
@@ -278,6 +324,7 @@ function renderAllShapes() {
     head.matrix.rotate(g_headAngle, 1, 0, 0);
     var headCoordinatesMat = new Matrix4(head.matrix);
     head.matrix.scale(0.39, 0.39, 0.39);
+    head.matrix.translate(-0.5, -0.5, -0.5);
     head.render();
 
     var beak = new Cube();
@@ -287,6 +334,7 @@ function renderAllShapes() {
     beak.matrix.translate(g_beakSize / 2, 0, 0);
     beak.matrix.scale(g_beakSize, 0.1, 0.1);
     var beakCoordinatesMat = new Matrix4(beak.matrix);
+    beak.matrix.translate(-0.5, -0.5, -0.5);
     beak.render();
 
     // A hummingbird by itself doesn't really have enough parts to make a chain of
@@ -296,6 +344,7 @@ function renderAllShapes() {
     flower.matrix = beakCoordinatesMat;
     flower.matrix.translate(0.7, 0, 0);
     flower.matrix.scale(0.2, 2, 2);
+    flower.matrix.translate(-0.5, -0.5, -0.5);
     flower.render();
 
     var wingLeft = new Cube();
@@ -310,6 +359,7 @@ function renderAllShapes() {
     }
     wingLeft.matrix.translate(0, 0.3, 0);
     wingLeft.matrix.scale(0.4, 0.6, 0.1);
+    wingLeft.matrix.translate(-0.5, -0.5, -0.5);
     wingLeft.render();
 
     var wingRight = new Cube();
@@ -324,6 +374,7 @@ function renderAllShapes() {
     }
     wingRight.matrix.translate(0, 0.3, 0);
     wingRight.matrix.scale(0.4, 0.6, 0.1);
+    wingRight.matrix.translate(-0.5, -0.5, -0.5);
     wingRight.render();
 
     var footLeft = new Cube();
@@ -332,6 +383,7 @@ function renderAllShapes() {
     footLeft.matrix.translate(0, -0.3, 0.1);
     footLeft.matrix.rotate(-45, 0, 0, 1);
     footLeft.matrix.scale(0.1, 0.1, 0.1);
+    footLeft.matrix.translate(-0.5, -0.5, -0.5);
     footLeft.render();
 
     var footRight = new Cube();
@@ -340,6 +392,7 @@ function renderAllShapes() {
     footRight.matrix.translate(0, -0.3, -0.1);
     footRight.matrix.rotate(-45, 0, 0, 1);
     footRight.matrix.scale(0.1, 0.1, 0.1);
+    footRight.matrix.translate(-0.5, -0.5, -0.5);
     footRight.render();
 
     var tail = new Cube();
@@ -348,6 +401,7 @@ function renderAllShapes() {
     tail.matrix.rotate(-45, 0, 0, 1);
     tail.matrix.translate(0, -0.5, 0);
     tail.matrix.scale(0.2, 0.4, 0.4);
+    tail.matrix.translate(-0.5, -0.5, -0.5);
     tail.render();
 
     // performance

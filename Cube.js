@@ -6,7 +6,7 @@ class Cube {
         // this.size = 4.0;
         // this.segments = 10;
         this.matrix = new Matrix4();
-        this.textureNum = -1;
+        this.textureNum = -2;
     }
 
     render() {
@@ -34,27 +34,27 @@ class Cube {
         drawTriangle3DUV( [0,1,0, 1,1,1, 0,1,1], [0,0, 1,1, 0,1] );
 
         // Front
-        gl.uniform4f(u_FragColor, rgba[0]*0.9, rgba[1]*0.9, rgba[2]*0.9, rgba[3]);
+        // gl.uniform4f(u_FragColor, rgba[0]*0.9, rgba[1]*0.9, rgba[2]*0.9, rgba[3]);
         drawTriangle3DUV( [0,0,0, 1,1,0, 1,0,0], [0,0, 1,1, 1,0]  );
         drawTriangle3DUV( [0,0,0, 1,1,0, 0,1,0], [0,0, 1,1, 0,1]  );
 
         // Right
-        gl.uniform4f(u_FragColor, rgba[0]*0.8, rgba[1]*0.8, rgba[2]*0.8, rgba[3]);
+        // gl.uniform4f(u_FragColor, rgba[0]*0.8, rgba[1]*0.8, rgba[2]*0.8, rgba[3]);
         drawTriangle3DUV( [1,0,0, 1,1,1, 1,0,1], [0,0, 1,1, 1,0]  );
         drawTriangle3DUV( [1,0,0, 1,1,1, 1,1,0], [0,0, 1,1, 0,1]  );
 
         // Left
-        gl.uniform4f(u_FragColor, rgba[0]*0.7, rgba[1]*0.7, rgba[2]*0.7, rgba[3]);
+        // gl.uniform4f(u_FragColor, rgba[0]*0.7, rgba[1]*0.7, rgba[2]*0.7, rgba[3]);
         drawTriangle3DUV( [0,0,1, 0,1,0, 0,0,0], [0,0, 1,1, 1,0]  );
         drawTriangle3DUV( [0,0,1, 0,1,0, 0,1,1], [0,0, 1,1, 0,1]  );
 
         // Back
-        gl.uniform4f(u_FragColor, rgba[0]*0.6, rgba[1]*0.6, rgba[2]*0.6, rgba[3]);
+        // gl.uniform4f(u_FragColor, rgba[0]*0.6, rgba[1]*0.6, rgba[2]*0.6, rgba[3]);
         drawTriangle3DUV( [1,0,1, 0,1,1, 0,0,1], [0,0, 1,1, 1,0]  );
         drawTriangle3DUV( [1,0,1, 0,1,1, 1,1,1], [0,0, 1,1, 0,1]  );
 
         // Bottom
-        gl.uniform4f(u_FragColor, rgba[0]*0.5, rgba[1]*0.5, rgba[2]*0.5, rgba[3]);
+        // gl.uniform4f(u_FragColor, rgba[0]*0.5, rgba[1]*0.5, rgba[2]*0.5, rgba[3]);
         drawTriangle3DUV( [0,0,1, 1,0,0, 1,0,1], [0,0, 1,1, 1,0]  );
         drawTriangle3DUV( [0,0,1, 1,0,0, 0,0,0], [0,0, 1,1, 0,1]  );
 
